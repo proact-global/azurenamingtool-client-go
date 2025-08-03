@@ -37,7 +37,7 @@ func NewClient(host, apiKey *string) (*Client, error) {
 
 func (c *Client) doRequest(req *http.Request) ([]byte, error) {
 	if c.APIKey != "" {
-		req.Header.Set("X-API-Key", c.APIKey)
+		req.Header.Set("APIKey", c.APIKey)
 	}
 
 	res, err := c.HTTPClient.Do(req)
