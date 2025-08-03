@@ -45,7 +45,6 @@ type Ingredient struct {
 // ResourceTypes -
 type ResourceTypes struct {
 	ID                           int    `json:"id"`
-	Name                         string `json:"name"`
 	Resource                     string `json:"resource"`
 	Optional                     string `json:"optional"`
 	Exclude                      string `json:"exclude"`
