@@ -15,7 +15,7 @@ func (c *Client) GetAllOrders(authToken *string) (*[]Order, error) {
 		return nil, err
 	}
 
-	body, err := c.doRequest(req, authToken)
+	body, err := c.doRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func (c *Client) GetOrder(orderID string, authToken *string) (*Order, error) {
 		return nil, err
 	}
 
-	body, err := c.doRequest(req, authToken)
+	body, err := c.doRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (c *Client) CreateOrder(orderItems []OrderItem, authToken *string) (*Order,
 		return nil, err
 	}
 
-	body, err := c.doRequest(req, authToken)
+	body, err := c.doRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (c *Client) UpdateOrder(orderID string, orderItems []OrderItem, authToken *
 		return nil, err
 	}
 
-	body, err := c.doRequest(req, authToken)
+	body, err := c.doRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (c *Client) DeleteOrder(orderID string, authToken *string) error {
 		return err
 	}
 
-	body, err := c.doRequest(req, authToken)
+	body, err := c.doRequest(req)
 	if err != nil {
 		return err
 	}
