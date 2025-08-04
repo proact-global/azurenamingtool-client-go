@@ -34,8 +34,8 @@ func (c *Client) GenerateName(generatename GenerateNameRequest) (*GenerateNameRe
 }
 
 // GetName - Returns a Name on ID
-func (c *Client) GetName(NameID string) ([]ResourceNameDetails, error) {
-    req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/Admin/GetGeneratedName/%s", c.HostURL, NameID), nil)
+func (c *Client) GetName(NameID int16) ([]ResourceNameDetails, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/Admin/GetGeneratedName/%d", c.HostURL, NameID), nil)
     if err != nil {
         return nil, err
     }
