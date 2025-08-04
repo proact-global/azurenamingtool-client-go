@@ -1,47 +1,5 @@
 package azurenamingtool
 
-// // Order -
-// type Order struct {
-// 	ID    int         `json:"id,omitempty"`
-// 	Items []OrderItem `json:"items,omitempty"`
-// }
-
-// // OrderItem -
-// type OrderItem struct {
-// 	Coffee   Coffee `json:"coffee"`
-// 	Quantity int    `json:"quantity"`
-// }
-
-// // Coffee -
-// type Coffee struct {
-// 	ID          int                `json:"id"`
-// 	Name        string             `json:"name"`
-// 	Teaser      string             `json:"teaser"`
-// 	Collection  string             `json:"collection"`
-// 	Origin      string             `json:"origin"`
-// 	Color       string             `json:"color"`
-// 	Description string             `json:"description"`
-// 	Price       float64            `json:"price"`
-// 	Image       string             `json:"image"`
-// 	Ingredient  []CoffeeIngredient `json:"ingredients"`
-// }
-
-// // Ingredient -
-// type CoffeeIngredient struct {
-// 	ID       int    `json:"ingredient_id"`
-// 	Name     string `json:"name"`
-// 	Quantity int    `json:"quantity"`
-// 	Unit     string `json:"unit"`
-// }
-
-// Ingredient -
-// type Ingredient struct {
-// 	ID       int    `json:"id"`
-// 	Name     string `json:"name"`
-// 	Quantity int    `json:"quantity"`
-// 	Unit     string `json:"unit"`
-// }
-
 // ResourceTypes -
 type ResourceTypes struct {
 	ID                           int    `json:"id"`
@@ -63,4 +21,31 @@ type ResourceTypes struct {
 	StaticValues                 string `json:"static_values"`
 	Enabled                      bool   `json:"enabled"`
 	ApplyDelimiter               bool   `json:"apply_delimiter"`
+}
+
+type GenerateNameRequest struct {
+	ResourceEnvironment string                              `json:"resourceEnvironment"`
+	ResourceFunction    string                              `json:"resourceFunction"`
+	ResourceInstance    string                              `json:"resourceInstance"`
+	ResourceLocation    string                              `json:"resourceLocation"`
+	ResourceOrg         string                              `json:"resourceOrg"`
+	ResourceType        string                              `json:"resourceType"`
+	CustomComponents    GenerateNameRequestCustomComponents `json:"customComponents"`
+}
+
+type GenerateNameRequestCustomComponents struct {
+	Application string `json:"application"`
+}
+
+type GenerateNameResponse struct {
+	ResourceName        string              `json:"resourceName"`
+	Message             string              `json:"message"`
+	Success             bool                `json:"success"`
+	ResourceNameDetails ResourceNameDetails `json:"resourceNameDetails"`
+}
+
+type ResourceNameDetails struct {
+	ID               int        `json:"id"`
+	ResourceName     string     `json:"resourceName"`
+	ResourceTypeName string     `json:"resourceTypeName"`
 }
