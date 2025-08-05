@@ -39,6 +39,8 @@ func (c *Client) doRequest(req *http.Request) ([]byte, error) {
 	if c.APIKey != "" {
 		req.Header.Set("APIKey", c.APIKey)
 	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "*/*")
 
 	res, err := c.HTTPClient.Do(req)
 	if err != nil {
