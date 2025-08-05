@@ -7,20 +7,20 @@ type ResourceTypes struct {
 	Optional                     string `json:"optional"`
 	Exclude                      string `json:"exclude"`
 	Property                     string `json:"property"`
-	ShortName                    string `json:"short_name"`
+	ShortName                    string `json:"ShortName"`
 	Scope                        string `json:"scope"`
-	LengthMin                    string `json:"length_min"`
-	LengthMax                    string `json:"length_max"`
-	ValidText                    string `json:"valid_text"`
-	InvalidText                  string `json:"invalid_text"`
-	InvalidCharacters            string `json:"invalid_characters"`
-	InvalidCharactersStart       string `json:"invalid_characters_start"`
-	InvalidCharactersEnd         string `json:"invalid_characters_end"`
-	InvalidCharactersConsecutive string `json:"invalid_characters_consecutive"`
+	LengthMin                    string `json:"lengthMin"`
+	LengthMax                    string `json:"lengthMax"`
+	ValidText                    string `json:"validText"`
+	InvalidText                  string `json:"invalidText"`
+	InvalidCharacters            string `json:"invalidCharacters"`
+	InvalidCharactersStart       string `json:"invalidCharactersStart"`
+	InvalidCharactersEnd         string `json:"invalidCharactersEnd"`
+	InvalidCharactersConsecutive string `json:"invalidCharactersConsecutive"`
 	Regx                         string `json:"regx"`
-	StaticValues                 string `json:"static_values"`
+	StaticValues                 string `json:"staticValues"`
 	Enabled                      bool   `json:"enabled"`
-	ApplyDelimiter               bool   `json:"apply_delimiter"`
+	ApplyDelimiter               bool   `json:"applyDelimiter"`
 }
 
 type GenerateNameRequest struct {
