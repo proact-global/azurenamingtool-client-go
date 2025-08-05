@@ -1,3 +1,3 @@
-module github.com/ofbjansen/azurenamingtool-client-go
+module github.com/proact-global/azurenamingtool-client-go
 
 go 1.13
