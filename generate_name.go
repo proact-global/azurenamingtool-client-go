@@ -34,7 +34,7 @@ func (c *Client) GenerateName(generatename GenerateNameRequest) (*GenerateNameRe
 }
 
 // GetName - Returns a Name on ID
-func (c *Client) GetName(NameID int16) ([]ResourceNameDetails, error) {
+func (c *Client) GetName(NameID int16) (*ResourceNameDetails, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/Admin/GetGeneratedName/%d", c.HostURL, NameID), nil)
     if err != nil {
         return nil, err
@@ -45,11 +45,11 @@ func (c *Client) GetName(NameID int16) ([]ResourceNameDetails, error) {
         return nil, err
     }
 
-    Name := []ResourceNameDetails{}
-    err = json.Unmarshal(body, &Name)
-    if err != nil {
-        return nil, err
-    }
+	Name := ResourceNameDetails{}
+	err = json.Unmarshal(body, &Name)
+	if err != nil {
+		return nil, err
+	}
 
-    return Name, nil
+	return &Name, nil
 }
