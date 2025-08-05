@@ -45,7 +45,7 @@ type GenerateNameResponse struct {
 }
 
 type ResourceNameDetails struct {
-	ID               int        `json:"id"`
-	ResourceName     string     `json:"resourceName"`
-	ResourceTypeName string     `json:"resourceTypeName"`
+	ID               int64  `json:"id"`
+	ResourceName     string `json:"resourceName"`
+	ResourceTypeName string `json:"resourceTypeName"`
 }
