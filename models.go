@@ -50,3 +50,8 @@ type ResourceNameDetails struct {
 	ResourceTypeName string     `json:"resourceTypeName"`
 	Components       [][]string `json:"components"`
 }
+
+type DeleteGeneratedNameRequest struct {
+	ID int64 `json:"id"`
+	AdminPassword string `json:"adminPassword"`
+}
