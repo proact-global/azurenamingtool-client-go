@@ -13,8 +13,6 @@ func (c *Client) DeleteName(deletename DeleteGeneratedNameRequest) ([]byte, erro
         return nil, fmt.Errorf("failed to create request: %w", err)
     }
 
-    req.Header.Set("AdminPassword", deletename.AdminPassword)
-
     body, err := c.doRequest(req)
     if err != nil {
         return nil, fmt.Errorf("request failed: %w", err)
