@@ -15,6 +15,7 @@ type Client struct {
 	HostURL    string
 	HTTPClient *http.Client
 	APIKey     string
+	AdminPassword *string
 }
 
 // NewClient -
@@ -41,6 +42,10 @@ func (c *Client) doRequest(req *http.Request) ([]byte, error) {
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "*/*")
+
+	if c.AdminPassword != nil {
+		req.Header.Set("AdminPassword", *c.AdminPassword)
+	}
 
 	res, err := c.HTTPClient.Do(req)
 	if err != nil {
