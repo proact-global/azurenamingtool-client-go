@@ -53,5 +53,4 @@ type ResourceNameDetails struct {
 
 type DeleteGeneratedNameRequest struct {
 	ID int64 `json:"id"`
-	AdminPassword string `json:"adminPassword"`
 }
