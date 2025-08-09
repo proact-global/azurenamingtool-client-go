@@ -19,7 +19,7 @@ type Client struct {
 }
 
 // NewClient -
-func NewClient(host, apiKey *string) (*Client, error) {
+func NewClient(host, apiKey, AdminPassword *string) (*Client, error) {
 	c := Client{
 		HTTPClient: &http.Client{Timeout: 10 * time.Second},
 		HostURL:    HostURL,
@@ -31,6 +31,10 @@ func NewClient(host, apiKey *string) (*Client, error) {
 
 	if apiKey != nil {
 		c.APIKey = *apiKey
+	}
+
+	if AdminPassword != nil {
+		c.AdminPassword = AdminPassword
 	}
 
 	return &c, nil
@@ -46,6 +50,8 @@ func (c *Client) doRequest(req *http.Request) ([]byte, error) {
 	if c.AdminPassword != nil {
 		req.Header.Set("AdminPassword", *c.AdminPassword)
 	}
+
+	// Perform the request
 
 	res, err := c.HTTPClient.Do(req)
 	if err != nil {
