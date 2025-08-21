@@ -24,17 +24,17 @@ type ResourceTypes struct {
 }
 
 type GenerateNameRequest struct {
-	ResourceEnvironment string                              `json:"resourceEnvironment"`
-	ResourceFunction    string                              `json:"resourceFunction"`
-	ResourceInstance    string                              `json:"resourceInstance"`
-	ResourceLocation    string                              `json:"resourceLocation"`
-	ResourceOrg         string                              `json:"resourceOrg"`
-	ResourceType        string                              `json:"resourceType"`
-	CustomComponents    GenerateNameRequestCustomComponents `json:"customComponents"`
-}
+	ResourceEnvironment string            `json:"resourceEnvironment"`
+	ResourceFunction    string            `json:"resourceFunction"`
+	ResourceInstance    string            `json:"resourceInstance"`
+	ResourceLocation    string            `json:"resourceLocation"`
+	ResourceOrg         string            `json:"resourceOrg"`
+	ResourceProjAppSvc  string            `json:"resourceProjAppSvc"`
+	ResourceType        string            `json:"resourceType"`
+	ResourceUnitDept    string            `json:"resourceUnitDept"`
+	CreatedBy           string            `json:"createdBy"`
+	CustomComponents    map[string]string `json:"customComponents"`
 
-type GenerateNameRequestCustomComponents struct {
-	Application string `json:"application"`
 }
 
 type GenerateNameResponse struct {
