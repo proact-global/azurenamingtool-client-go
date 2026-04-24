@@ -42,6 +42,7 @@ type GenerateNameResponse struct {
 	Message             string              `json:"message"`
 	Success             bool                `json:"success"`
 	ResourceNameDetails ResourceNameDetails `json:"resourceNameDetails"`
+	ValidationMetadata  ValidationMetadata  `json:"validationMetadata"`
 }
 
 type ResourceNameDetails struct {
@@ -53,4 +54,33 @@ type ResourceNameDetails struct {
 
 type DeleteGeneratedNameRequest struct {
 	ID int64 `json:"id"`
+}
+
+// V2 API wrapper types
+
+type ApiResponse[T any] struct {
+	Success  bool        `json:"success"`
+	Data     T           `json:"data"`
+	Error    *ApiError   `json:"error"`
+	Metadata ApiMetadata `json:"metadata"`
+}
+
+type ApiError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Target  string `json:"target"`
+}
+
+type ApiMetadata struct {
+	CorrelationID string `json:"correlationId"`
+	Timestamp     string `json:"timestamp"`
+	Message       string `json:"message"`
+}
+
+type ValidationMetadata struct {
+	ValidationPerformed bool   `json:"validationPerformed"`
+	ExistsInAzure       bool   `json:"existsInAzure"`
+	OriginalName        string `json:"originalName"`
+	IncrementAttempts   int    `json:"incrementAttempts"`
+	ValidationWarning   string `json:"validationWarning"`
 }

@@ -1,9 +1,11 @@
 package azurenamingtool
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -12,10 +14,11 @@ const HostURL string = "http://localhost:19090"
 
 // Client -
 type Client struct {
-	HostURL    string
-	HTTPClient *http.Client
-	APIKey     string
+	HostURL       string
+	HTTPClient    *http.Client
+	APIKey        string
 	AdminPassword *string
+	mu            sync.Mutex
 }
 
 // NewClient -
@@ -65,6 +68,22 @@ func (c *Client) doRequest(req *http.Request) ([]byte, error) {
 	}
 
 	if res.StatusCode != http.StatusOK {
+		var errBody struct {
+			Error *struct {
+				Code    string `json:"code"`
+				Message string `json:"message"`
+			} `json:"error"`
+			Metadata *struct {
+				CorrelationID string `json:"correlationId"`
+			} `json:"metadata"`
+		}
+		if jsonErr := json.Unmarshal(body, &errBody); jsonErr == nil && errBody.Error != nil {
+			msg := fmt.Sprintf("[%s] %s", errBody.Error.Code, errBody.Error.Message)
+			if errBody.Metadata != nil && errBody.Metadata.CorrelationID != "" {
+				msg += fmt.Sprintf(" (correlationId: %s)", errBody.Metadata.CorrelationID)
+			}
+			return nil, fmt.Errorf("%s", msg)
+		}
 		return nil, fmt.Errorf("status: %d, body: %s", res.StatusCode, body)
 	}
 
