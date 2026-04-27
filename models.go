@@ -33,9 +33,10 @@ type GenerateNameRequest struct {
 	CustomComponents    GenerateNameRequestCustomComponents `json:"customComponents"`
 }
 
-type GenerateNameRequestCustomComponents struct {
-	Application string `json:"application"`
-}
+// GenerateNameRequestCustomComponents holds the custom naming components for a
+// GenerateNameRequest. The map key is the component name (e.g. "application",
+// "subnet_tier", "subnet_instance") and the value is its registered short name.
+type GenerateNameRequestCustomComponents = map[string]string
 
 type GenerateNameResponse struct {
 	ResourceName        string              `json:"resourceName"`
