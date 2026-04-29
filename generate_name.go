@@ -2,10 +2,14 @@ package azurenamingtool
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 )
+
+// ErrNotFound is returned by GetName when the requested ID does not exist in the naming tool.
+var ErrNotFound = errors.New("generated name not found")
 
 // GenerateName - Generate new name
 func (c *Client) GenerateName(generatename GenerateNameRequest) (*GenerateNameResponse, error) {
@@ -49,22 +53,26 @@ func (c *Client) GetName(NameID int64) (*ResourceNameDetails, error) {
 		return nil, err
 	}
 
+	c.mu.Lock()
 	body, err := c.doRequest(req)
+	c.mu.Unlock()
 	if err != nil {
+		// The Admin endpoint returns HTTP 400 with a "not found" message when the
+		// ID does not exist. Map that to the ErrNotFound sentinel so callers can
+		// distinguish a missing resource from a transient failure.
+		if strings.Contains(strings.ToLower(err.Error()), "not found") {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 
-	resp := ApiResponse[ResourceNameDetails]{}
+	// The Admin endpoint returns the raw GeneratedName object directly,
+	// not wrapped in the V2 ApiResponse envelope.
+	resp := ResourceNameDetails{}
 	err = json.Unmarshal(body, &resp)
 	if err != nil {
 		return nil, err
 	}
-	if !resp.Success {
-		if resp.Error != nil {
-			return nil, fmt.Errorf("[%s] %s", resp.Error.Code, resp.Error.Message)
-		}
-		return nil, fmt.Errorf("get name failed")
-	}
 
-	return &resp.Data, nil
+	return &resp, nil
 }
