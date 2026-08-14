@@ -1,8 +1,8 @@
 package azurenamingtool
 
 import (
-    "fmt"
-    "net/http"
+	"fmt"
+	"net/http"
 	"strings"
 )
 
@@ -19,8 +19,9 @@ func (c *Client) DeleteName(deletename DeleteGeneratedNameRequest) ([]byte, erro
 	body, err := c.doRequest(req)
 	c.mu.Unlock()
 	if err != nil {
-		// Treat "not found" as success — the entry is already gone.
-		if strings.Contains(err.Error(), "Generated Name not found") {
+		// Treat "not found" as success — the entry is already gone, so deleting it
+		// is a no-op and the caller's intent is already satisfied.
+		if isNotFound(err) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("request failed: %w", err)

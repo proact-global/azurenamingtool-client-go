@@ -2,7 +2,6 @@ package azurenamingtool
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"sync"
@@ -68,6 +67,14 @@ func (c *Client) doRequest(req *http.Request) ([]byte, error) {
 	}
 
 	if res.StatusCode != http.StatusOK {
+		apiErr := &APIError{
+			StatusCode: res.StatusCode,
+			Body:       string(body),
+		}
+
+		// V2 endpoints wrap errors in the ApiResponse envelope. V1 Admin endpoints
+		// return a bare JSON string, which fails to unmarshal here and leaves the
+		// envelope fields empty — the status code and body still identify it.
 		var errBody struct {
 			Error *struct {
 				Code    string `json:"code"`
@@ -78,14 +85,15 @@ func (c *Client) doRequest(req *http.Request) ([]byte, error) {
 			} `json:"metadata"`
 		}
 		if jsonErr := json.Unmarshal(body, &errBody); jsonErr == nil && errBody.Error != nil {
-			msg := fmt.Sprintf("[%s] %s", errBody.Error.Code, errBody.Error.Message)
-			if errBody.Metadata != nil && errBody.Metadata.CorrelationID != "" {
-				msg += fmt.Sprintf(" (correlationId: %s)", errBody.Metadata.CorrelationID)
+			apiErr.Code = errBody.Error.Code
+			apiErr.Message = errBody.Error.Message
+			if errBody.Metadata != nil {
+				apiErr.CorrelationID = errBody.Metadata.CorrelationID
 			}
-			return nil, fmt.Errorf("%s", msg)
 		}
-		return nil, fmt.Errorf("status: %d, body: %s", res.StatusCode, body)
+
+		return nil, apiErr
 	}
 
-	return body, err
+	return body, nil
 }
