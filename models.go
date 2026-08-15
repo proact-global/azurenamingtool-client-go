@@ -24,13 +24,20 @@ type ResourceTypes struct {
 }
 
 type GenerateNameRequest struct {
-	ResourceEnvironment string                              `json:"resourceEnvironment"`
-	ResourceFunction    string                              `json:"resourceFunction"`
-	ResourceInstance    string                              `json:"resourceInstance"`
-	ResourceLocation    string                              `json:"resourceLocation"`
-	ResourceOrg         string                              `json:"resourceOrg"`
-	ResourceType        string                              `json:"resourceType"`
-	CustomComponents    GenerateNameRequestCustomComponents `json:"customComponents"`
+	ResourceEnvironment string `json:"resourceEnvironment"`
+	ResourceFunction    string `json:"resourceFunction"`
+	ResourceInstance    string `json:"resourceInstance"`
+	ResourceLocation    string `json:"resourceLocation"`
+	ResourceOrg         string `json:"resourceOrg"`
+	ResourceType        string `json:"resourceType"`
+
+	// ResourceProjAppSvc and ResourceUnitDept are components the naming tool
+	// supports and includes in a name when enabled. They were previously absent
+	// here, so a deployment using either could not be driven through this client.
+	ResourceProjAppSvc string `json:"resourceProjAppSvc,omitempty"`
+	ResourceUnitDept   string `json:"resourceUnitDept,omitempty"`
+
+	CustomComponents GenerateNameRequestCustomComponents `json:"customComponents"`
 }
 
 // GenerateNameRequestCustomComponents holds the custom naming components for a
