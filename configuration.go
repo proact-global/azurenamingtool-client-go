@@ -52,7 +52,7 @@ type ResourceComponent struct {
 // LengthRange returns the component's permitted length as numbers. ok is false
 // when the deployment leaves the bounds unset, which means unconstrained rather
 // than zero-length.
-func (c ResourceComponent) LengthRange() (min, max int, ok bool) {
+func (c ResourceComponent) LengthRange() (minLen, maxLen int, ok bool) {
 	minStr, maxStr := strings.TrimSpace(c.MinLength), strings.TrimSpace(c.MaxLength)
 	if minStr == "" || maxStr == "" {
 		return 0, 0, false
