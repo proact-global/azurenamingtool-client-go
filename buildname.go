@@ -2,6 +2,8 @@ package azurenamingtool
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -116,7 +118,100 @@ func (n *NamingConfiguration) BuildName(req GenerateNameRequest) (string, error)
 		return "", fmt.Errorf("the request supplied no values for any enabled component")
 	}
 
-	return name.String(), nil
+	// Assembly is only half of it. The tool then puts the name through the
+	// resource type's own rules and adopts whatever comes back, which can differ
+	// from what was assembled.
+	return applyResourceTypeRules(resourceType, name.String(), delimiter)
+}
+
+// applyResourceTypeRules reproduces the check the tool runs over an assembled
+// name, in ValidationHelper.ValidateGeneratedName, whose result the generator
+// adopts in place of the name it built.
+//
+// This is not merely validation: it rewrites. A name is lowercased when the
+// resource type's pattern admits no uppercase, and the delimiter is removed from
+// the whole name when the name fails that pattern or exceeds the maximum length.
+// The delimiter removal is why a resource type can have delimiters enabled and
+// still produce names without any -- as a storage account does, its pattern
+// permitting only lowercase letters and digits.
+//
+// Anything the tool would reject returns an error here, because a rejected
+// request generates no name at all.
+func applyResourceTypeRules(resourceType ResourceTypes, name, delimiter string) (string, error) {
+	pattern := strings.TrimSpace(resourceType.Regx)
+	if pattern == "" {
+		return "", fmt.Errorf(
+			"resource type %q has no validation pattern configured, which the naming tool "+
+				"treats as a failure", resourceType.ShortName)
+	}
+
+	// The tool takes a pattern with no "A-Z" in it to mean lowercase only, rather
+	// than testing the name and reacting.
+	if !strings.Contains(pattern, "A-Z") {
+		name = strings.ToLower(name)
+	}
+
+	// Go's regexp is RE2, which rejects lookarounds that .NET accepts. A pattern
+	// that cannot be evaluated leaves no way to know whether the delimiter would
+	// survive, and a name that guesses wrong is worse than no name.
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return "", fmt.Errorf(
+			"resource type %q uses the pattern %q, which cannot be evaluated here (%v), "+
+				"so the name it produces cannot be predicted",
+			resourceType.ShortName, pattern, err)
+	}
+
+	if !re.MatchString(name) {
+		if delimiter == "" {
+			return "", fmt.Errorf(
+				"the assembled name %q does not satisfy the pattern for resource type %q",
+				name, resourceType.ShortName)
+		}
+		// The tool's first response to a failing name is to drop the delimiter
+		// throughout and try again.
+		name = strings.ReplaceAll(name, delimiter, "")
+		if !re.MatchString(name) {
+			return "", fmt.Errorf(
+				"the assembled name does not satisfy the pattern for resource type %q, "+
+					"even without the delimiter (%q)", resourceType.ShortName, name)
+		}
+	}
+
+	if minLen, err := strconv.Atoi(strings.TrimSpace(resourceType.LengthMin)); err == nil {
+		if len(name) < minLen {
+			return "", fmt.Errorf(
+				"the name %q is shorter than the %d characters resource type %q requires",
+				name, minLen, resourceType.ShortName)
+		}
+	}
+
+	if maxLen, err := strconv.Atoi(strings.TrimSpace(resourceType.LengthMax)); err == nil {
+		if len(name) > maxLen {
+			// Dropping the delimiter is also how the tool tries to fit a name
+			// within the maximum length.
+			name = strings.ReplaceAll(name, delimiter, "")
+			if len(name) > maxLen {
+				return "", fmt.Errorf(
+					"the name %q is longer than the %d characters resource type %q allows, "+
+						"even without the delimiter", name, maxLen, resourceType.ShortName)
+			}
+		}
+	}
+
+	// These reject rather than rewrite. The tool applies further checks on
+	// starting, ending and consecutive characters; a name this accepts and the
+	// tool then rejects fails at apply with the tool's own message, which is the
+	// safe direction to be incomplete in.
+	for _, c := range resourceType.InvalidCharacters {
+		if strings.ContainsRune(name, c) {
+			return "", fmt.Errorf(
+				"the name %q contains %q, which resource type %q does not allow",
+				name, string(c), resourceType.ShortName)
+		}
+	}
+
+	return name, nil
 }
 
 // componentValue returns the request's value for a component, by the same route

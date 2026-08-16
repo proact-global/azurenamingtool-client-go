@@ -19,9 +19,14 @@ func realDeploymentConfig() *NamingConfiguration {
 			{Name: "ResourceEnvironment", Enabled: true, SortOrder: 6},
 		},
 		Delimiters: []ResourceDelimiter{{Delimiter: "", Enabled: true}},
+		// Permissive patterns, so tests exercising assembly are not also
+		// exercising the rules applied afterwards. Tests concerned with those set
+		// the restrictive patterns a real deployment carries.
 		ResourceTypes: []ResourceTypes{
-			{Resource: "Storage/storageAccounts", ShortName: "st", ApplyDelimiter: true},
-			{Resource: "Resources/resourceGroups", ShortName: "rg", ApplyDelimiter: true},
+			{Resource: "Storage/storageAccounts", ShortName: "st", ApplyDelimiter: true,
+				Regx: `^[a-zA-Z0-9-]{1,90}$`, LengthMin: "1", LengthMax: "90"},
+			{Resource: "Resources/resourceGroups", ShortName: "rg", ApplyDelimiter: true,
+				Regx: `^[a-zA-Z0-9-]{1,90}$`, LengthMin: "1", LengthMax: "90"},
 		},
 	}
 }
@@ -150,12 +155,19 @@ func TestBuildNameDropsADelimiterTheTypeForbids(t *testing.T) {
 	}
 	cfg.ResourceTypes[0].InvalidCharacters = "-"
 
-	got, err := cfg.BuildName(realRequest())
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	// Assembly drops the delimiter for built-in components but not for the custom
+	// one, which consults none of the flags. The name therefore still carries a
+	// character the resource type forbids, and the check that follows assembly
+	// rejects it outright rather than producing a name.
+	//
+	// So the quirk does not yield a wrong name, it yields no name -- which is the
+	// safer of the two outcomes, and worth pinning as the behaviour.
+	_, err := cfg.BuildName(realRequest())
+	if err == nil {
+		t.Fatal("expected the name to be rejected for containing a forbidden character")
 	}
-	if want := "pcast-webapp948wep"; got != want {
-		t.Errorf("BuildName() = %q, want %q (dropped for built-in components only)", got, want)
+	if !strings.Contains(err.Error(), "does not allow") {
+		t.Errorf("error = %q, want it to name the forbidden character", err)
 	}
 }
 
@@ -264,4 +276,131 @@ func TestNormalizeComponentName(t *testing.T) {
 			t.Errorf("normalizeComponentName(%q) = %q, want %q", in, got, want)
 		}
 	}
+}
+
+// The rules the tool applies after assembling a name, which rewrite it rather
+// than merely accepting or rejecting it. Patterns here are the ones the
+// deployment actually carries.
+
+const (
+	// Storage accounts: lowercase letters and digits only, so a delimiter cannot
+	// survive and uppercase cannot either.
+	storageRegex = `^[a-z0-9]{3,24}$`
+	// Resource groups: hyphens are permitted. The lookahead is unsupported by
+	// Go's RE2, which the reproduction has to admit rather than work around.
+	resourceGroupRegex = `^(?!.*[\.]$)[a-zA-Z0-9_\.()-]{1,90}$`
+)
+
+// TestBuildNameStripsADelimiterThePatternRejects is the behaviour that made a
+// storage account produce no delimiters even with delimiters enabled: the
+// delimiter is applied while assembling and removed afterwards, because the
+// assembled name fails the resource type's pattern.
+func TestBuildNameStripsADelimiterThePatternRejects(t *testing.T) {
+	cfg := realDeploymentConfig()
+	cfg.Delimiters = []ResourceDelimiter{{Delimiter: "-", Enabled: true}}
+	for i := range cfg.Components {
+		cfg.Components[i].ApplyDelimiterBefore = true
+		cfg.Components[i].ApplyDelimiterAfter = true
+	}
+	cfg.ResourceTypes[0].ApplyDelimiter = true
+	cfg.ResourceTypes[0].Regx = storageRegex
+	cfg.ResourceTypes[0].LengthMin = "3"
+	cfg.ResourceTypes[0].LengthMax = "24"
+
+	got, err := cfg.BuildName(realRequest())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if want := "pcastwebapp948wep"; got != want {
+		t.Errorf("BuildName() = %q, want %q (the delimiter must be stripped)", got, want)
+	}
+}
+
+// TestBuildNameLowercasesWhenThePatternAdmitsNoUppercase covers the tool reading
+// the absence of "A-Z" in a pattern as lowercase-only, and lowercasing rather
+// than rejecting.
+func TestBuildNameLowercasesWhenThePatternAdmitsNoUppercase(t *testing.T) {
+	cfg := realDeploymentConfig()
+	cfg.ResourceTypes[0].Regx = storageRegex
+	cfg.ResourceTypes[0].LengthMax = "24"
+
+	req := realRequest()
+	req.ResourceOrg = "PCA"
+	req.CustomComponents = map[string]string{"application": "WebApp"}
+
+	got, err := cfg.BuildName(req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if want := "pcastwebapp948wep"; got != want {
+		t.Errorf("BuildName() = %q, want %q (lowercased)", got, want)
+	}
+}
+
+// TestBuildNameRefusesAPatternItCannotEvaluate covers .NET patterns Go's RE2
+// rejects. Whether the delimiter survives cannot be determined, and a guess
+// would be shown in a plan and contradicted at apply.
+func TestBuildNameRefusesAPatternItCannotEvaluate(t *testing.T) {
+	cfg := realDeploymentConfig()
+	cfg.ResourceTypes[0].Regx = resourceGroupRegex
+
+	_, err := cfg.BuildName(realRequest())
+	if err == nil {
+		t.Fatal("expected an error for a pattern that cannot be evaluated")
+	}
+	if !strings.Contains(err.Error(), "cannot be evaluated") {
+		t.Errorf("error = %q, want it to say the pattern cannot be evaluated", err)
+	}
+}
+
+// TestBuildNameStripsADelimiterToFitTheMaximumLength covers the second rewriting
+// rule: an over-long name loses its delimiter before being rejected.
+func TestBuildNameStripsADelimiterToFitTheMaximumLength(t *testing.T) {
+	cfg := realDeploymentConfig()
+	cfg.Delimiters = []ResourceDelimiter{{Delimiter: "-", Enabled: true}}
+	for i := range cfg.Components {
+		cfg.Components[i].ApplyDelimiterBefore = true
+		cfg.Components[i].ApplyDelimiterAfter = true
+	}
+	cfg.ResourceTypes[0].ApplyDelimiter = true
+	// Permits hyphens, so the pattern alone would not strip them.
+	cfg.ResourceTypes[0].Regx = `^[a-z0-9-]{1,90}$`
+	// Long enough for the undelimited name, too short for the delimited one.
+	cfg.ResourceTypes[0].LengthMax = "17"
+
+	got, err := cfg.BuildName(realRequest())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if want := "pcastwebapp948wep"; got != want {
+		t.Errorf("BuildName() = %q, want %q (delimiter dropped to fit)", got, want)
+	}
+}
+
+func TestBuildNameRejectsWhatTheToolWouldReject(t *testing.T) {
+	t.Run("no pattern configured", func(t *testing.T) {
+		cfg := realDeploymentConfig()
+		cfg.ResourceTypes[0].Regx = ""
+		if _, err := cfg.BuildName(realRequest()); err == nil {
+			t.Error("expected an error when no pattern is configured")
+		}
+	})
+
+	t.Run("too long even without the delimiter", func(t *testing.T) {
+		cfg := realDeploymentConfig()
+		cfg.ResourceTypes[0].Regx = `^[a-z0-9]{1,90}$`
+		cfg.ResourceTypes[0].LengthMax = "5"
+		if _, err := cfg.BuildName(realRequest()); err == nil {
+			t.Error("expected an error for a name that cannot be shortened enough")
+		}
+	})
+
+	t.Run("shorter than the minimum", func(t *testing.T) {
+		cfg := realDeploymentConfig()
+		cfg.ResourceTypes[0].Regx = `^[a-z0-9]{1,90}$`
+		cfg.ResourceTypes[0].LengthMin = "100"
+		if _, err := cfg.BuildName(realRequest()); err == nil {
+			t.Error("expected an error for a name below the minimum length")
+		}
+	})
 }
